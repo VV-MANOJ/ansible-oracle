@@ -1,0 +1,39 @@
+- name: "Get VDC list from organization"
+  uri:
+    url: "{{ vcd_org_href }}"
+    method: GET
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  register: vcd_org_detail_response
+
+- name: "Parse VDC links from organization"
+  xml:
+    xmlstring: "{{ vcd_org_detail_response.content }}"
+    xpath: "//vcloud:Link[@type='application/vnd.vmware.vcloud.vdc+xml'][@name='{{ vcd_vdc }}']"
+    namespaces:
+      vcloud: "http://www.vmware.com/vcloud/v1.5"
+  register: vcd_vdc_links
+
+- name: "Extract VDC HREF"
+  set_fact:
+    vcd_vdc_href: "{{ vcd_vdc_links.matches[0]['vcloud:Link']['@href'] }}"
+  when: vcd_vdc_links.matches | length > 0
+
+- name: "Verify VDC found"
+  fail:
+    msg: "VDC {{ vcd_vdc }} not found in organization {{ vcd_org }}"
+  when: vcd_vdc_href is not defined
+
+- name: "Get VDC details"
+  uri:
+    url: "{{ vcd_vdc_href }}"
+    method: GET
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  register: vcd_vdc_detail_response

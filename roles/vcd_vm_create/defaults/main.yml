@@ -1,0 +1,42 @@
+---
+# VCD Connection Settings
+vcd_host: ""
+vcd_username: ""
+vcd_password: ""
+vcd_org: ""
+vcd_validate_certs: true
+vcd_api_timeout: 30
+vcd_no_log: true
+
+# VDC Settings
+vcd_vdc: ""
+
+# VM Specification
+vcd_vm_name: ""
+vcd_vm_description: "VM created by Ansible"
+vcd_vm_catalog: ""
+vcd_vm_template: ""
+vcd_vm_cpu_count: 2
+vcd_vm_memory_mb: 4096
+vcd_vm_deploy: true
+vcd_vm_power_on: true
+
+# VM Network Configuration (Optional)
+# vcd_vm_network_config:
+#   - network_name: "network1"
+#     is_inherited: true
+#     ip_allocation_mode: "DHCP"
+#     fence_mode: "bridged"
+
+# VM Storage (Optional)
+# vcd_vm_storage_profile: ""
+
+# Task Control
+vcd_vm_wait_ready: true
+vcd_vm_ready_retries: 30
+vcd_vm_ready_delay: 10
+vcd_task_retries: 60
+vcd_task_delay: 10
+
+# Error Handling
+vcd_cleanup_on_error: false

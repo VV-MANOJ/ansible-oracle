@@ -1,0 +1,40 @@
+---
+- name: "Create VM in VMware Cloud Director"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    # VCD Connection
+    vcd_host: "vcd.example.com"
+    vcd_username: "admin"
+    vcd_password: "{{ vault_vcd_password }}"
+    vcd_org: "MyOrganization"
+    vcd_vdc: "MyVDC"
+    
+    # VM Configuration
+    vcd_vm_name: "ansible-test-vm"
+    vcd_vm_description: "Test VM created by Ansible"
+    vcd_vm_catalog: "MyCatalog"
+    vcd_vm_template: "Ubuntu-20.04-Template"
+    vcd_vm_cpu_count: 4
+    vcd_vm_memory_mb: 8192
+    
+    # Network Configuration
+    vcd_vm_network_config:
+      - network_name: "internal-network"
+        is_inherited: false
+        ip_allocation_mode: "STATIC"
+        ip_address: "192.168.1.100"
+        gateway: "192.168.1.1"
+        netmask: "255.255.255.0"
+        dns1: "8.8.8.8"
+        dns2: "8.8.4.4"
+        fence_mode: "bridged"
+    
+    # Control Settings
+    vcd_vm_power_on: true
+    vcd_vm_wait_ready: true
+    vcd_cleanup_on_error: true
+    
+  roles:
+    - role: vcd_vm_create

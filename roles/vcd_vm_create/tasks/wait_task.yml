@@ -1,0 +1,18 @@
+- name: "Wait for task {{ task_description | default('') }} to complete"
+  uri:
+    url: "{{ task_href }}"
+    method: GET
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  register: vcd_task_response
+  until: vcd_task_response.content | regex_search('status="success"') or vcd_task_response.content | regex_search('status="error"')
+  retries: "{{ vcd_task_retries | default(60) }}"
+  delay: "{{ vcd_task_delay | default(10) }}"
+
+- name: "Check task completion status"
+  fail:
+    msg: "Task {{ task_description | default('') }} failed"
+  when: vcd_task_response.content | regex_search('status="error"')

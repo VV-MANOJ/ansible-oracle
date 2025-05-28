@@ -1,0 +1,8 @@
+---
+# Internal variables - do not modify
+vcd_auth_token: ""
+vcd_org_href: ""
+vcd_vdc_href: ""
+vcd_template_href: ""
+vcd_vapp_template_href: ""
+vcd_vm_href: ""

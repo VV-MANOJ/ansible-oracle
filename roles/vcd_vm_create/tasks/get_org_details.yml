@@ -1,0 +1,29 @@
+# roles/vcd_vm_create/tasks/get_org_details.yml
+- name: "Get organization details"
+  uri:
+    url: "https://{{ vcd_host }}/api/org/{{ vcd_org }}"
+    method: GET
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  register: vcd_org_response
+
+- name: "Parse organization XML response"
+  xml:
+    xmlstring: "{{ vcd_org_response.content }}"
+    xpath: "//vcloud:Org"
+    namespaces:
+      vcloud: "http://www.vmware.com/vcloud/v1.5"
+  register: vcd_org_parsed
+
+- name: "Extract organization HREF"
+  set_fact:
+    vcd_org_href: "{{ vcd_org_parsed.matches[0]['vcloud:Org']['@href'] }}"
+  when: vcd_org_parsed.matches | length > 0
+
+- name: "Verify organization found"
+  fail:
+    msg: "Organization {{ vcd_org }} not found or inaccessible"
+  when: vcd_org_href is not defined

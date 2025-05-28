@@ -1,0 +1,84 @@
+- name: "Prepare VM creation XML payload"
+  set_fact:
+    vcd_vm_create_xml: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <InstantiateVAppTemplateParams
+          xmlns="http://www.vmware.com/vcloud/v1.5"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          name="{{ vcd_vm_name }}"
+          deploy="{{ vcd_vm_deploy | default(true) | lower }}"
+          powerOn="{{ vcd_vm_power_on | default(true) | lower }}">
+          <Description>{{ vcd_vm_description | default('VM created by Ansible') }}</Description>
+          <InstantiationParams>
+              {% if vcd_vm_network_config is defined %}
+              <NetworkConfigSection>
+                  <ovf:Info xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1">Configuration parameters for logical networks</ovf:Info>
+                  {% for network in vcd_vm_network_config %}
+                  <NetworkConfig networkName="{{ network.network_name }}">
+                      <Configuration>
+                          <IpScopes>
+                              <IpScope>
+                                  <IsInherited>{{ network.is_inherited | default(true) | lower }}</IsInherited>
+                                  {% if network.gateway is defined %}
+                                  <Gateway>{{ network.gateway }}</Gateway>
+                                  {% endif %}
+                                  {% if network.netmask is defined %}
+                                  <Netmask>{{ network.netmask }}</Netmask>
+                                  {% endif %}
+                                  {% if network.dns1 is defined %}
+                                  <Dns1>{{ network.dns1 }}</Dns1>
+                                  {% endif %}
+                                  {% if network.dns2 is defined %}
+                                  <Dns2>{{ network.dns2 }}</Dns2>
+                                  {% endif %}
+                              </IpScope>
+                          </IpScopes>
+                          <FenceMode>{{ network.fence_mode | default('bridged') }}</FenceMode>
+                      </Configuration>
+                  </NetworkConfig>
+                  {% endfor %}
+              </NetworkConfigSection>
+              {% endif %}
+          </InstantiationParams>
+          <Source href="{{ vcd_vapp_template_href }}"/>
+          {% if vcd_vm_storage_profile is defined %}
+          <DefaultStorageProfile href="{{ vcd_vm_storage_profile }}"/>
+          {% endif %}
+      </InstantiateVAppTemplateParams>
+
+- name: "Create VM from template"
+  uri:
+    url: "{{ vcd_vdc_href }}/action/instantiateVAppTemplate"
+    method: POST
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      Content-Type: "application/vnd.vmware.vcloud.instantiateVAppTemplateParams+xml"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    body: "{{ vcd_vm_create_xml }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(60) }}"
+  register: vcd_vm_create_response
+
+- name: "Parse VM creation response"
+  xml:
+    xmlstring: "{{ vcd_vm_create_response.content }}"
+    xpath: "//vcloud:VApp"
+    namespaces:
+      vcloud: "http://www.vmware.com/vcloud/v1.5"
+  register: vcd_vm_created
+
+- name: "Extract VM HREF"
+  set_fact:
+    vcd_vm_href: "{{ vcd_vm_created.matches[0]['vcloud:VApp']['@href'] }}"
+  when: vcd_vm_created.matches | length > 0
+
+- name: "Verify VM creation"
+  fail:
+    msg: "Failed to create VM {{ vcd_vm_name }}"
+  when: vcd_vm_href is not defined
+
+- name: "Wait for VM creation task to complete"
+  include_tasks: wait_task.yml
+  vars:
+    task_href: "{{ vcd_vm_create_response.location }}"
+    task_description: "VM creation"

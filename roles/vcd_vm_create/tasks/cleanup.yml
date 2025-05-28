@@ -1,0 +1,10 @@
+- name: "Logout from VCD session"
+  uri:
+    url: "https://{{ vcd_host }}/api/session"
+    method: DELETE
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  ignore_errors: true

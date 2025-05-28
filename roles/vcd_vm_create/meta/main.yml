@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  author: "Ansible Automation"
+  description: "Create Virtual Machines in VMware Cloud Director using REST API v39.0"
+  company: "Your Company"
+  license: "Apache-2.0"
+  min_ansible_version: "2.9"
+  platforms:
+    - name: "EL"
+      versions:
+        - "7"
+        - "8"
+        - "9"
+    - name: "Ubuntu"
+      versions:
+        - "18.04"
+        - "20.04"
+        - "22.04"
+  galaxy_tags:
+    - "vmware"
+    - "vcd"
+    - "cloud"
+    - "virtualization"
+    - "infrastructure"
+
+dependencies: []

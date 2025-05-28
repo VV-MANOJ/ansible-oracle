@@ -1,0 +1,44 @@
+# roles/vcd_vm_create/tasks/validate_vars.yml
+- name: "Validate required VCD connection variables"
+  fail:
+    msg: "Required variable {{ item }} is not defined"
+  when: vars[item] is not defined or vars[item] == ""
+  loop:
+    - vcd_host
+    - vcd_username
+    - vcd_password
+    - vcd_org
+    - vcd_vdc
+    - vcd_vm_name
+
+- name: "Validate VM specification variables"
+  fail:
+    msg: "Required VM specification variable {{ item }} is not defined"
+  when: vars[item] is not defined or vars[item] == ""
+  loop:
+    - vcd_vm_catalog
+    - vcd_vm_template
+    - vcd_vm_cpu_count
+    - vcd_vm_memory_mb
+
+- name: "Validate numeric values"
+  fail:
+    msg: "{{ item.name }} must be a positive integer"
+  when: vars[item.var] is not number or vars[item.var] <= 0
+  loop:
+    - { name: "CPU count", var: "vcd_vm_cpu_count" }
+    - { name: "Memory (MB)", var: "vcd_vm_memory_mb" }
+
+- name: "Validate network configuration if provided"
+  block:
+    - name: "Check network configuration structure"
+      fail:
+        msg: "Network configuration must be a list of dictionaries"
+      when: vcd_vm_network_config is not iterable or vcd_vm_network_config is string
+
+    - name: "Validate each network configuration"
+      fail:
+        msg: "Network configuration {{ item }} is missing required fields: network_name"
+      when: item.network_name is not defined or item.network_name == ""
+      loop: "{{ vcd_vm_network_config }}"
+  when: vcd_vm_network_config is defined

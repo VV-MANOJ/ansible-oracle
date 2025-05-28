@@ -1,0 +1,40 @@
+- name: "VCD VM Creation Role - Main Tasks"
+  block:
+    - name: "Validate required variables"
+      include_tasks: validate_vars.yml
+
+    - name: "Authenticate to VMware Cloud Director"
+      include_tasks: authenticate.yml
+
+    - name: "Get organization details"
+      include_tasks: get_org_details.yml
+
+    - name: "Get VDC details"
+      include_tasks: get_vdc_details.yml
+
+    - name: "Get catalog and template details"
+      include_tasks: get_catalog_template.yml
+
+    - name: "Create Virtual Machine"
+      include_tasks: create_vm.yml
+
+    - name: "Configure VM network"
+      include_tasks: configure_network.yml
+      when: vcd_vm_network_config is defined and vcd_vm_network_config | length > 0
+
+    - name: "Power on VM"
+      include_tasks: power_on_vm.yml
+      when: vcd_vm_power_on | default(true) | bool
+
+    - name: "Wait for VM to be ready"
+      include_tasks: wait_vm_ready.yml
+      when: vcd_vm_wait_ready | default(true) | bool
+
+  rescue:
+    - name: "Handle errors during VM creation"
+      include_tasks: error_handler.yml
+
+  always:
+    - name: "Cleanup authentication token"
+      include_tasks: cleanup.yml
+      when: vcd_auth_token is defined

@@ -1,0 +1,14 @@
+---
+vcd_vm_name: "web-server-01"
+vcd_vm_description: "Production web server"
+vcd_vm_template: "CentOS-8-Template"
+vcd_vm_cpu_count: 4
+vcd_vm_memory_mb: 8192
+
+vcd_vm_network_config:
+  - network_name: "web-tier-network"
+    is_inherited: false
+    ip_allocation_mode: "STATIC"
+    ip_address: "10.0.1.10"
+    gateway: "10.0.1.1"
+    netmask: "255.255.255.0"

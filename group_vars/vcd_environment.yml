@@ -1,0 +1,20 @@
+---
+# Common VCD settings for environment
+vcd_host: "vcd.company.com"
+vcd_org: "CompanyOrg"
+vcd_vdc: "ProductionVDC"
+vcd_validate_certs: true
+vcd_api_timeout: 60
+
+# Default VM settings
+vcd_vm_catalog: "CompanyTemplates"
+vcd_vm_cpu_count: 2
+vcd_vm_memory_mb: 4096
+vcd_vm_power_on: true
+vcd_vm_wait_ready: true
+
+# Network defaults
+vcd_vm_network_config:
+  - network_name: "production-network"
+    is_inherited: true
+    fence_mode: "bridged"

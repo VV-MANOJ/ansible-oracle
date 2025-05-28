@@ -1,0 +1,21 @@
+- name: "Authenticate to VCD using REST API v39.0"
+  uri:
+    url: "https://{{ vcd_host }}/api/sessions"
+    method: POST
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      Authorization: "Basic {{ (vcd_username + '@' + vcd_org + ':' + vcd_password) | b64encode }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  register: vcd_auth_response
+  no_log: "{{ vcd_no_log | default(true) }}"
+
+- name: "Extract authentication token"
+  set_fact:
+    vcd_auth_token: "{{ vcd_auth_response.x_vcloud_authorization }}"
+  when: vcd_auth_response.x_vcloud_authorization is defined
+
+- name: "Verify authentication success"
+  fail:
+    msg: "Authentication failed - no token received"
+  when: vcd_auth_token is not defined

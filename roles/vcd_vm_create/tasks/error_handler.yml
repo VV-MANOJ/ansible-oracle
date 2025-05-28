@@ -1,0 +1,39 @@
+- name: "Log error details"
+  debug:
+    msg: |
+      Error occurred during VM creation:
+      - VM Name: {{ vcd_vm_name | default('N/A') }}
+      - Organization: {{ vcd_org | default('N/A') }}
+      - VDC: {{ vcd_vdc | default('N/A') }}
+      - Error: {{ ansible_failed_result.msg | default('Unknown error') }}
+
+- name: "Attempt cleanup if VM was partially created"
+  block:
+    - name: "Check if VM exists for cleanup"
+      uri:
+        url: "{{ vcd_vm_href }}"
+        method: GET
+        headers:
+          Accept: "application/*+xml;version=39.0"
+          x-vcloud-authorization: "{{ vcd_auth_token }}"
+        validate_certs: "{{ vcd_validate_certs | default(true) }}"
+        timeout: "{{ vcd_api_timeout | default(30) }}"
+      register: vcd_cleanup_check
+      ignore_errors: true
+
+    - name: "Delete VM if exists and cleanup is enabled"
+      uri:
+        url: "{{ vcd_vm_href }}"
+        method: DELETE
+        headers:
+          Accept: "application/*+xml;version=39.0"
+          x-vcloud-authorization: "{{ vcd_auth_token }}"
+        validate_certs: "{{ vcd_validate_certs | default(true) }}"
+        timeout: "{{ vcd_api_timeout | default(30) }}"
+      when: 
+        - vcd_cleanup_on_error | default(false) | bool
+        - vcd_cleanup_check.status | default(404) == 200
+      ignore_errors: true
+  when: 
+    - vcd_vm_href is defined
+    - vcd_auth_token is defined

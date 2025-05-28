@@ -1,0 +1,38 @@
+- name: "Check VM power state"
+  uri:
+    url: "{{ vcd_vm_href }}"
+    method: GET
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  register: vcd_vm_status_response
+
+- name: "Parse VM status"
+  xml:
+    xmlstring: "{{ vcd_vm_status_response.content }}"
+    xpath: "//vcloud:VApp/@status"
+    namespaces:
+      vcloud: "http://www.vmware.com/vcloud/v1.5"
+  register: vcd_vm_status_parsed
+
+- name: "Power on VM if not already powered on"
+  block:
+    - name: "Send power on request"
+      uri:
+        url: "{{ vcd_vm_href }}/power/action/powerOn"
+        method: POST
+        headers:
+          Accept: "application/*+xml;version=39.0"
+          x-vcloud-authorization: "{{ vcd_auth_token }}"
+        validate_certs: "{{ vcd_validate_certs | default(true) }}"
+        timeout: "{{ vcd_api_timeout | default(30) }}"
+      register: vcd_power_on_response
+
+    - name: "Wait for power on task to complete"
+      include_tasks: wait_task.yml
+      vars:
+        task_href: "{{ vcd_power_on_response.location }}"
+        task_description: "VM power on"
+  when: vcd_vm_status_parsed.matches[0] != "4"  # 4 = POWERED_ON

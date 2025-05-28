@@ -1,0 +1,45 @@
+- name: "Get VM network configuration"
+  uri:
+    url: "{{ vcd_vm_href }}/networkConfigSection"
+    method: GET
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  register: vcd_vm_network_response
+
+- name: "Configure VM network settings"
+  uri:
+    url: "{{ vcd_vm_href }}/networkConfigSection"
+    method: PUT
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      Content-Type: "application/vnd.vmware.vcloud.networkConfigSection+xml"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    body: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <NetworkConfigSection xmlns="http://www.vmware.com/vcloud/v1.5">
+          <ovf:Info xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1">Network configuration</ovf:Info>
+          {% for network in vcd_vm_network_config %}
+          <NetworkConfig networkName="{{ network.network_name }}">
+              <Configuration>
+                  <IpScopes>
+                      <IpScope>
+                          <IsInherited>{{ network.is_inherited | default(true) | lower }}</IsInherited>
+                          {% if network.ip_allocation_mode is defined %}
+                          <IpAllocationMode>{{ network.ip_allocation_mode }}</IpAllocationMode>
+                          {% endif %}
+                          {% if network.ip_address is defined %}
+                          <IpAddress>{{ network.ip_address }}</IpAddress>
+                          {% endif %}
+                      </IpScope>
+                  </IpScopes>
+              </Configuration>
+          </NetworkConfig>
+          {% endfor %}
+      </NetworkConfigSection>
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  register: vcd_network_config_response
+  when: vcd_vm_network_config | length > 0

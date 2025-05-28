@@ -1,0 +1,53 @@
+- name: "Get catalog details"
+  uri:
+    url: "https://{{ vcd_host }}/api/catalog/name/{{ vcd_vm_catalog }}"
+    method: GET
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  register: vcd_catalog_response
+  failed_when: vcd_catalog_response.status != 200
+
+- name: "Parse catalog items"
+  xml:
+    xmlstring: "{{ vcd_catalog_response.content }}"
+    xpath: "//vcloud:CatalogItem[@name='{{ vcd_vm_template }}']"
+    namespaces:
+      vcloud: "http://www.vmware.com/vcloud/v1.5"
+  register: vcd_catalog_items
+
+- name: "Extract template HREF"
+  set_fact:
+    vcd_template_href: "{{ vcd_catalog_items.matches[0]['vcloud:CatalogItem']['@href'] }}"
+  when: vcd_catalog_items.matches | length > 0
+
+- name: "Verify template found"
+  fail:
+    msg: "Template {{ vcd_vm_template }} not found in catalog {{ vcd_vm_catalog }}"
+  when: vcd_template_href is not defined
+
+- name: "Get template details"
+  uri:
+    url: "{{ vcd_template_href }}"
+    method: GET
+    headers:
+      Accept: "application/*+xml;version=39.0"
+      x-vcloud-authorization: "{{ vcd_auth_token }}"
+    validate_certs: "{{ vcd_validate_certs | default(true) }}"
+    timeout: "{{ vcd_api_timeout | default(30) }}"
+  register: vcd_template_detail_response
+
+- name: "Parse vApp template entity"
+  xml:
+    xmlstring: "{{ vcd_template_detail_response.content }}"
+    xpath: "//vcloud:Entity"
+    namespaces:
+      vcloud: "http://www.vmware.com/vcloud/v1.5"
+  register: vcd_template_entity
+
+- name: "Extract vApp template HREF"
+  set_fact:
+    vcd_vapp_template_href: "{{ vcd_template_entity.matches[0]['vcloud:Entity']['@href'] }}"
+  when: vcd_template_entity.matches | length > 0
